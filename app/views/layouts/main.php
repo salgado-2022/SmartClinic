@@ -12,27 +12,27 @@
         <div class="container">
             <a class="navbar-brand" href="/">Smart Clinic</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegación">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Dashboard</a>
+                        <a class="nav-link" href="/">Inicio</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/patients">Patients</a>
+                        <a class="nav-link" href="/patients">Pacientes</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/doctors">Doctors</a>
+                        <a class="nav-link" href="/doctors">Doctores</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/appointments">Appointments</a>
+                        <a class="nav-link" href="/appointments">Citas</a>
                     </li>
                 </ul>
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <form action="/logout" method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+                        <button type="submit" class="btn btn-outline-light btn-sm">Cerrar Sesión</button>
                     </form>
                 <?php endif; ?>
             </div>
