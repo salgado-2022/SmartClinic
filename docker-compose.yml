@@ -1,6 +1,8 @@
-version: '3.8'
-
 services:
+
+  # ============================================
+  # Aplicación PHP + Apache
+  # ============================================
   app:
     build:
       context: .
@@ -23,6 +25,9 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ============================================
+  # Base de datos MySQL
+  # ============================================
   db:
     image: mysql:8.0
     container_name: smartclinic_db
@@ -46,5 +51,22 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # ============================================
+  # Jenkins - Servidor de Integración Continua
+  # ============================================
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: smartclinic_jenkins
+    ports:
+      - "9090:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
 volumes:
   db_data:
+  jenkins_data:
