@@ -13,8 +13,7 @@ RUN apt-get update && \
 # Dar permisos al usuario jenkins para usar Docker
 RUN usermod -aG docker jenkins
 
-# Crear el workspace con permisos correctos para jenkins
-RUN mkdir -p /var/jenkins_home/workspace && \
-    chown -R jenkins:jenkins /var/jenkins_home
+# Configurar git para permitir cualquier directorio (fix safe.directory)
+RUN git config --global --add safe.directory '*'
 
-USER jenkins
+# No cambiar a USER jenkins porque necesitamos root para Docker socket
