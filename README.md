@@ -4,7 +4,7 @@ Sistema web de gestión de citas médicas desarrollado como proyecto académico 
 
 ## 📋 Descripción
 
-Smart Clinic es una aplicación monolítica PHP que sigue el patrón **MVC (Modelo-Vista-Controlador)**, contenerizada con **Docker Compose** para garantizar un entorno de desarrollo reproducible y preparado para CI/CD.
+Smart Clinic es una aplicación monolítica PHP que sigue el patrón **MVC (Modelo-Vista-Controlador)**, contenerizada con **Docker Compose** e integrada con **Jenkins** para Integración Continua (CI).
 
 ### Funcionalidades principales
 
@@ -14,6 +14,7 @@ Smart Clinic es una aplicación monolítica PHP que sigue el patrón **MVC (Mode
 - **Programación de citas** — Agendamiento con validación de conflictos en franjas de 30 minutos (tanto para doctor como para paciente)
 - **Cancelación de citas** — Control de estados (programada → cancelada)
 - **Health check** — Endpoint `/health` para verificar conectividad con la base de datos
+- **Pipeline CI con Jenkins** — Build, test y deploy automatizados
 
 ---
 
@@ -26,6 +27,7 @@ Smart Clinic es una aplicación monolítica PHP que sigue el patrón **MVC (Mode
 | Base de datos | MySQL | 8.0 |
 | Frontend | Bootstrap (CDN) | 5.3 |
 | Contenerización | Docker + Docker Compose | 29.x |
+| CI/CD | Jenkins | LTS |
 | Arquitectura | MVC (sin framework) | — |
 
 ---
@@ -44,73 +46,86 @@ git clone https://github.com/salgado-2022/SmartClinic.git
 cd SmartClinic
 ```
 
-### Paso 2: Crear el archivo `.env`
-
-Copia el archivo de ejemplo y ajusta los valores si lo deseas:
-
-```bash
-cp .env.example .env
-```
-
-O crea manualmente el archivo `.env` en la raíz del proyecto con el siguiente contenido:
-
-```env
-# Configuración de Base de Datos
-DB_HOST=db
-DB_PORT=3306
-DB_USER=smartclinic_user
-DB_PASSWORD=smartclinic_pass
-DB_NAME=smartclinic
-
-# Contraseña root de MySQL (usada internamente por el contenedor de BD)
-DB_ROOT_PASSWORD=root_password
-```
-
-> ⚠️ **Importante:** El valor de `DB_HOST` debe ser `db` (nombre del servicio en Docker Compose). No cambies esto a menos que modifiques el `docker-compose.yml`.
-
-### Paso 3: Levantar los contenedores
+### Paso 2: Levantar los contenedores
 
 ```bash
 docker-compose up --build -d
 ```
 
-Este comando:
-1. Construye la imagen de la aplicación (PHP 8.2 + Apache + PDO MySQL)
-2. Descarga la imagen de MySQL 8.0 (solo la primera vez)
-3. Crea un volumen persistente para los datos de MySQL
-4. Ejecuta el script `init.sql` para crear las tablas y el usuario admin (solo en el primer arranque)
-5. Levanta ambos contenedores en background
+Este comando levanta 3 servicios:
 
-**Espera ~30 segundos** a que MySQL termine de inicializar. Puedes verificar el estado con:
+| Servicio | Puerto | Descripción |
+|---|---|---|
+| `app` | `http://localhost:8080` | Aplicación PHP + Apache |
+| `db` | `localhost:3306` | Base de datos MySQL |
+| `jenkins` | `http://localhost:9090` | Servidor de Integración Continua |
+
+**Espera ~30 segundos** a que MySQL termine de inicializar. Verifica con:
 
 ```bash
 docker-compose ps
 ```
 
-Deberías ver ambos contenedores con estado "Up" y el de BD con "(healthy)":
-
-```
-NAME              IMAGE             STATUS                    PORTS
-smartclinic_app   smartclinic-app   Up 30 seconds             0.0.0.0:8080->80/tcp
-smartclinic_db    mysql:8.0         Up 45 seconds (healthy)   0.0.0.0:3306->3306/tcp
-```
-
-### Paso 4: Acceder a la aplicación
-
-Abre tu navegador en:
+### Paso 3: Acceder a la aplicación
 
 ```
 http://localhost:8080
 ```
 
-### Paso 5: Iniciar sesión
-
-Usa las credenciales del administrador que se crean automáticamente:
+### Paso 4: Iniciar sesión
 
 | Campo | Valor |
 |---|---|
 | Email | `admin@smartclinic.com` |
 | Contraseña | `Admin123!` |
+
+---
+
+## 🔄 Integración Continua con Jenkins
+
+### Acceder a Jenkins
+
+```
+http://localhost:9090
+```
+
+### Primera vez — obtener contraseña inicial
+
+```bash
+docker exec smartclinic_jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+### Configurar el Pipeline
+
+1. Ingresa a Jenkins con la contraseña inicial
+2. Instala los plugins sugeridos
+3. Crea tu usuario administrador
+4. Crea un nuevo job:
+   - Click en **"Nueva Tarea"**
+   - Nombre: `SmartClinic`
+   - Tipo: **Pipeline**
+   - Click en "OK"
+5. En la configuración del job:
+   - Sección **"Pipeline"**
+   - Definition: **"Pipeline script from SCM"**
+   - SCM: **Git**
+   - Repository URL: `https://github.com/salgado-2022/SmartClinic.git`
+   - Branch: `*/main`
+   - Script Path: `Jenkinsfile`
+   - Click en **"Guardar"**
+6. Click en **"Construir ahora"**
+
+### Etapas del Pipeline
+
+El `Jenkinsfile` define 5 etapas:
+
+```
+1. Checkout    → Descarga el código del repositorio
+2. Build       → Construye la imagen Docker de la app
+3. Test        → Levanta los contenedores y verifica que estén corriendo
+4. Health Check → Verifica que el endpoint /health responda HTTP 200
+5. Deploy      → Confirma el despliegue exitoso
+```
 
 ---
 
@@ -134,7 +149,7 @@ docker-compose logs -f app
 docker-compose down
 ```
 
-### Detener y eliminar todo (contenedores, volúmenes, datos)
+### Detener y eliminar todo (contenedores, volúmenes, imágenes)
 
 ```bash
 docker-compose down --volumes --rmi all
@@ -160,8 +175,10 @@ Respuesta esperada: `{"status":"ok"}`
 
 ```
 SmartClinic/
-├── docker-compose.yml          # Orquestación: app + db
+├── docker-compose.yml          # Orquestación: app + db + jenkins
 ├── Dockerfile                  # Imagen PHP 8.2 + Apache + PDO
+├── Dockerfile.jenkins          # Imagen Jenkins con Docker y Compose
+├── Jenkinsfile                 # Pipeline CI (5 etapas)
 ├── .env.example                # Plantilla de variables de entorno
 ├── .gitignore                  # Archivos excluidos de Git
 ├── init.sql                    # Esquema de BD + usuario admin seed
@@ -243,7 +260,7 @@ Al primer arranque se crea automáticamente:
 
 ## 👨‍💻 Autor
 
-Proyecto desarrollado para la asignatura de Integración Continua.
+Proyecto desarrollado para la asignatura de **Integración Continua** — Politécnico Grancolombiano.
 
 ---
 
