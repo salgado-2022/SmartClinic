@@ -1,0 +1,26 @@
+# Environment variables
+.env
+
+# PHP dependencies
+vendor/
+
+# Docker data volumes
+docker-data/
+mysql-data/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+.kiro/
