@@ -33,7 +33,7 @@ pipeline {
             steps {
                 echo '🏥 Verificando endpoint de salud...'
                 sh 'sleep 10'
-                sh 'curl -f http://app:80/health || curl -f http://localhost:8080/health'
+                sh 'curl -f http://smartclinic_app:80/health || curl -f http://localhost:8080/health'
                 echo '✅ Health check exitoso - BD conectada'
             }
         }
@@ -53,7 +53,7 @@ pipeline {
         }
         failure {
             echo '❌ El pipeline falló, revisa los logs'
-            sh 'docker-compose logs'
+            sh 'docker-compose logs || true'
         }
     }
 }
