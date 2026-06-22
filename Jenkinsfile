@@ -31,7 +31,11 @@ pipeline {
             }
             steps {
                 echo '🧪 Ejecutando pruebas unitarias...'
-                sh '''docker-compose run --rm --no-deps app sh -c "composer install --dev && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"'''
+                sh '''docker run --rm \
+                    -v "$(pwd)":/var/www \
+                    -w /var/www \
+                    smartclinic-pipeline-app:latest \
+                    sh -c "composer install --dev && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"'''
             }
             post {
                 always {
