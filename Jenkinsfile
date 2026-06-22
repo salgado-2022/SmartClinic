@@ -45,11 +45,10 @@ docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.
         stage('4. Deploy') {
             steps {
                 echo '🚀 Redesplegando app con la nueva imagen...'
-                sh "docker-compose -p ${COMPOSE_PROJECT} up -d db"
-                sh 'sleep 15'
-                sh "docker-compose -p ${COMPOSE_PROJECT} up -d app"
-                sh 'sleep 10'
-                echo '✅ App y DB redesplegados con la imagen actualizada'
+                sh 'docker stop smartclinic_app || true'
+                sh 'docker start smartclinic_app'
+                sh 'sleep 5'
+                echo '✅ App redesplegada'
             }
         }
 
