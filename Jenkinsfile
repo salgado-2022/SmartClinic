@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        COMPOSE_PROJECT = 'smartclinic'
+    }
+
     stages {
 
         stage('1. Checkout') {
@@ -13,15 +17,14 @@ pipeline {
         stage('2. Cleanup') {
             steps {
                 echo '🧹 Limpiando contenedores previos (sin tocar Jenkins)...'
-                sh 'docker rm -f smartclinic_app smartclinic_db || true'
-                sh 'docker network rm smartclinic-pipeline_default || true'
+                sh 'docker rm -f smartclinic_app smartclinic_db smartclinic_test || true'
             }
         }
 
         stage('3. Build') {
             steps {
                 echo '🐳 Construyendo imagen de la aplicación...'
-                sh 'docker-compose build app'
+                sh "docker-compose -p ${COMPOSE_PROJECT} build app"
             }
         }
 
@@ -32,7 +35,7 @@ pipeline {
             steps {
                 echo '🧪 Ejecutando pruebas unitarias...'
                 sh 'mkdir -p build/reports'
-                sh '''docker create --name smartclinic_test -w /var/www smartclinic-pipeline-app:latest sh -c "composer install && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"
+                sh '''docker create --name smartclinic_test -w /var/www smartclinic-app:latest sh -c "composer install && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"
 docker cp . smartclinic_test:/var/www
 docker start -a smartclinic_test
 docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.xml || true'''
@@ -45,12 +48,12 @@ docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.
             }
         }
 
-        stage('5. Test') {
+        stage('5. Integration Test') {
             steps {
                 echo '🧪 Levantando app y base de datos...'
-                sh 'docker-compose up -d db'
+                sh "docker-compose -p ${COMPOSE_PROJECT} up -d db"
                 sh 'sleep 15'
-                sh 'docker-compose up -d app'
+                sh "docker-compose -p ${COMPOSE_PROJECT} up -d app"
                 sh 'sleep 10'
                 sh 'docker ps | grep smartclinic_app'
                 sh 'docker ps | grep smartclinic_db'
@@ -78,11 +81,11 @@ docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.
     post {
         success {
             echo '🎉 Pipeline completado con éxito - Smart Clinic desplegado'
-            echo '✅ App corriendo en http://localhost:8080'
+            echo '✅ App: http://localhost:8080 | Jenkins: http://localhost:9090'
         }
         failure {
             echo '❌ El pipeline falló, revisa los logs'
-            sh 'docker-compose logs app db || true'
+            sh "docker-compose -p ${COMPOSE_PROJECT} logs app db || true"
             sh 'docker rm -f smartclinic_app smartclinic_db || true'
         }
     }
