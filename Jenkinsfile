@@ -10,14 +10,22 @@ pipeline {
             }
         }
 
-        stage('2. Build') {
+        stage('2. Cleanup') {
+            steps {
+                echo '🧹 Limpiando contenedores previos (sin tocar Jenkins)...'
+                sh 'docker rm -f smartclinic_app smartclinic_db || true'
+                sh 'docker network rm smartclinic-pipeline_default || true'
+            }
+        }
+
+        stage('3. Build') {
             steps {
                 echo '🐳 Construyendo imagen de la aplicación...'
                 sh 'docker-compose build app'
             }
         }
 
-        stage('3. Unit Tests') {
+        stage('4. Unit Tests') {
             options {
                 timeout(time: 10, unit: 'MINUTES')
             }
@@ -32,7 +40,7 @@ pipeline {
             }
         }
 
-        stage('4. Test') {
+        stage('5. Test') {
             steps {
                 echo '🧪 Levantando app y base de datos...'
                 sh 'docker-compose up -d db'
@@ -45,7 +53,7 @@ pipeline {
             }
         }
 
-        stage('5. Health Check') {
+        stage('6. Health Check') {
             steps {
                 echo '🏥 Verificando endpoint de salud...'
                 sh 'sleep 5'
@@ -54,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('6. Deploy') {
+        stage('7. Deploy') {
             steps {
                 echo '🚀 Aplicación desplegada correctamente'
                 echo '✅ Smart Clinic corriendo en http://localhost:8080'
@@ -69,6 +77,10 @@ pipeline {
         failure {
             echo '❌ El pipeline falló, revisa los logs'
             sh 'docker-compose logs app db || true'
+        }
+        always {
+            echo '🧹 Limpieza post-ejecución...'
+            sh 'docker rm -f smartclinic_app smartclinic_db || true'
         }
     }
 }
