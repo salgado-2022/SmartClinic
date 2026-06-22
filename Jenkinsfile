@@ -44,11 +44,24 @@ docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.
 
         stage('4. Deploy') {
             steps {
-                echo '🚀 Redesplegando app con la nueva imagen...'
-                sh 'docker stop smartclinic_app || true'
-                sh 'docker start smartclinic_app'
+                echo '🚀 Desplegando app con el código actualizado del repositorio...'
+                sh 'docker network create smartclinic_default || true'
+                sh "docker-compose -p ${COMPOSE_PROJECT} up -d db"
+                sh 'sleep 10'
+                sh 'docker rm -f smartclinic_app || true'
+                sh '''docker run -d \
+                    --name smartclinic_app \
+                    --network smartclinic_default \
+                    -p 8080:80 \
+                    -e DB_HOST=smartclinic_db \
+                    -e DB_PORT=3306 \
+                    -e DB_USER=smartclinic_user \
+                    -e DB_PASSWORD=smartclinic_pass \
+                    -e DB_NAME=smartclinic \
+                    --restart unless-stopped \
+                    smartclinic-app:latest'''
                 sh 'sleep 5'
-                echo '✅ App redesplegada'
+                echo '✅ App desplegada con los últimos cambios del repositorio'
             }
         }
 
