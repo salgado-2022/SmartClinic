@@ -78,13 +78,11 @@ docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.
     post {
         success {
             echo '🎉 Pipeline completado con éxito - Smart Clinic desplegado'
+            echo '✅ App corriendo en http://localhost:8080'
         }
         failure {
             echo '❌ El pipeline falló, revisa los logs'
             sh 'docker-compose logs app db || true'
-        }
-        always {
-            echo '🧹 Limpieza post-ejecución...'
             sh 'docker rm -f smartclinic_app smartclinic_db || true'
         }
     }
