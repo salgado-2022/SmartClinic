@@ -17,7 +17,9 @@ services:
       DB_PASSWORD: smartclinic_pass
       DB_NAME: smartclinic
     volumes:
+      - .:/var/www
       - ./app:/var/www/html
+    working_dir: /var/www
     depends_on:
       db:
         condition: service_healthy

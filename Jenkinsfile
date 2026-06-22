@@ -17,7 +17,22 @@ pipeline {
             }
         }
 
-        stage('3. Test') {
+        stage('3. Unit Tests') {
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
+            steps {
+                echo '🧪 Ejecutando pruebas unitarias...'
+                sh 'docker-compose run --rm app sh -c "composer install --dev && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"'
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'build/reports/junit.xml'
+                }
+            }
+        }
+
+        stage('4. Test') {
             steps {
                 echo '🧪 Levantando app y base de datos...'
                 sh 'docker-compose up -d db'
@@ -30,7 +45,7 @@ pipeline {
             }
         }
 
-        stage('4. Health Check') {
+        stage('5. Health Check') {
             steps {
                 echo '🏥 Verificando endpoint de salud...'
                 sh 'sleep 5'
@@ -39,7 +54,7 @@ pipeline {
             }
         }
 
-        stage('5. Deploy') {
+        stage('6. Deploy') {
             steps {
                 echo '🚀 Aplicación desplegada correctamente'
                 echo '✅ Smart Clinic corriendo en http://localhost:8080'
