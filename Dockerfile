@@ -1,7 +1,16 @@
 FROM php:8.2-apache
 
+# Install system dependencies (unzip for Composer, git for source installs)
+RUN apt-get update && apt-get install -y unzip git && rm -rf /var/lib/apt/lists/*
+
 # Install PDO MySQL extension
 RUN docker-php-ext-install pdo pdo_mysql
+
+# Install PCOV extension for code coverage (faster than Xdebug for coverage-only)
+RUN pecl install pcov && docker-php-ext-enable pcov
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Enable Apache mod_rewrite for URL rewriting
 RUN a2enmod rewrite
@@ -22,6 +31,9 @@ RUN echo '<Directory /var/www/html>\n\
     Require all granted\n\
 </Directory>' > /etc/apache2/conf-available/custom-directory.conf \
     && a2enconf custom-directory
+
+# Create build/reports directory for test output (JUnit XML)
+RUN mkdir -p /var/www/build/reports
 
 # Copy application source code
 COPY ./app /var/www/html

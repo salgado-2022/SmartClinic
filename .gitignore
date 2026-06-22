@@ -23,4 +23,11 @@ Desktop.ini
 # Logs
 *.log
 
+# PHPUnit cache
+.phpunit.cache/
+
+# Test reports (generated at runtime)
+build/reports/*.xml
+build/reports/*.html
+
 .kiro/
