@@ -31,14 +31,15 @@ pipeline {
             }
             steps {
                 echo '🧪 Ejecutando pruebas unitarias...'
-                sh '''docker run --rm \
-                    -v "$(pwd)":/var/www \
-                    -w /var/www \
-                    smartclinic-pipeline-app:latest \
-                    sh -c "composer install --dev && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"'''
+                sh 'mkdir -p build/reports'
+                sh '''docker create --name smartclinic_test -w /var/www smartclinic-pipeline-app:latest sh -c "composer install && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"
+docker cp . smartclinic_test:/var/www
+docker start -a smartclinic_test
+docker cp smartclinic_test:/var/www/build/reports/junit.xml build/reports/junit.xml || true'''
             }
             post {
                 always {
+                    sh 'docker rm -f smartclinic_test || true'
                     junit allowEmptyResults: true, testResults: 'build/reports/junit.xml'
                 }
             }
