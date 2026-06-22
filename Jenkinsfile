@@ -23,7 +23,7 @@ pipeline {
             }
             steps {
                 echo '🧪 Ejecutando pruebas unitarias...'
-                sh 'docker-compose run --rm app sh -c "composer install --dev && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"'
+                sh '''docker-compose run --rm --no-deps app sh -c "composer install --dev && vendor/bin/phpunit --log-junit build/reports/junit.xml --coverage-text"'''
             }
             post {
                 always {
